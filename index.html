@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teachable Machine Sound Classifier</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/audio"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 40px;
+    }
+    h1 { font-size: 2.2rem; }
+    button {
+      margin-top: 20px;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #label { margin-top: 30px; font-size: 1.6rem; }
+    #emoji { margin-top: 10px; font-size: 4rem; }
+  </style>
+</head>
+
+<body>
+  <h1>🔊 Sound Classifier</h1>
+  <button onclick="init()">🎤 Start Listening</button>
+
+  <div id="label">대기 중...</div>
+  <div id="emoji">🙂</div>
+
+  <script>
+    let model, maxPredictions;
+    const URL = "./"; // 같은 폴더 안에 model.json, metadata.json이 있으므로
+
+    async function init() {
+      document.getElementById("label").innerText = "모델 로딩 중...";
+
+      // Teachable Machine 오디오 모델 로딩
+      model = await tmAudio.load(URL + "model.json", URL + "metadata.json");
+      maxPredictions = model.getTotalClasses();
+
+      listen();
+    }
+
+    function listen() {
+      document.getElementById("label").innerText = "Listening... (마이크 허용 필요)";
+
+      model.listen(result => {
+        const scores = result;
+        let highest = 0;
+        let highestIndex = 0;
+
+        for (let i = 0; i < maxPredictions; i++) {
+          if (scores[i].probability > highest) {
+            highest = scores[i].probability;
+            highestIndex = i;
+          }
+        }
+
+        const label = model.classes[highestIndex].className;
+        document.getElementById("label").innerText = `결과: ${label}`;
+
+        // 이모지 매핑
+        let emoji = "🙂";
+        if (label.includes("Baby")) emoji = "👶😢";
+        if (label.includes("Door")) emoji = "🔔😊";
+        if (label.includes("Fire")) emoji = "🔥😨";
+
+        document.getElementById("emoji").innerText = emoji;
+      }, {
+        probabilityThreshold: 0.70,
+        overlapFactor: 0.5
+      });
+    }
+  </script>
+</body>
+</html>
